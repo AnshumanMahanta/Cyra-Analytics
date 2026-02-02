@@ -178,7 +178,7 @@ if uploaded_file is not None:
         chart_paths.append(tmp.name)
         plt.close(fig)
 
-    st.write(f"Total visuals generated: {len(chart_paths)}")
+    st.write(f"Total vi generated: {len(chart_paths)}")
 
     # -------------------- Downloads --------------------
     report_json = {
