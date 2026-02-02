@@ -27,30 +27,45 @@ st.write("Upload a CSV file to generate profiling reports.")
 # -------------------- Helper Functions --------------------
 def plot_missing_values(missing_values):
     cols = list(missing_values.keys())
-    values = [v["count"] for v in missing_values.values()]
+
+    # Handle both dict and scalar formats
+    values = []
+    for v in missing_values.values():
+        if isinstance(v, dict):
+            values.append(v.get("count", 0))
+        else:
+            values.append(v)
 
     fig, ax = plt.subplots()
     ax.bar(cols, values)
     ax.set_title("Missing Values per Column")
     ax.set_ylabel("Missing Count")
     plt.xticks(rotation=45, ha="right")
+
     return fig
 
 
-def plot_numeric_distribution(df):
+def plot_numeric_distributions(df):
     numeric_cols = [
         col for col, dtype in zip(df.columns, df.dtypes)
         if dtype in (pl.Int64, pl.Float64)
     ]
 
-    if not numeric_cols:
-        return None
+    figs = []
 
-    fig, ax = plt.subplots()
-    df.select(numeric_cols).to_pandas().hist(ax=ax)
-    plt.suptitle("Numeric Column Distributions")
-    return fig
+    for col in numeric_cols:
+        fig, ax = plt.subplots(figsize=(6, 4))  # Slightly larger
+        ax.hist(df[col].to_list(), bins=20)
+        ax.set_title(f"Distribution of {col}")
+        ax.set_xlabel(col)
+        ax.set_ylabel("Frequency")
+        
+        # FIX: Adjust layout to prevent label cutoff
+        fig.tight_layout()
+        
+        figs.append(fig)
 
+    return figs
 
 def generate_pdf_report(md_text, chart_paths):
     temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
@@ -135,8 +150,11 @@ if uploaded_file is not None:
     st.markdown(md_report)
 
     # -------------------- Visualizations --------------------
-    st.subheader("Data Visualizations")
+    st.subheader("📊 Data Visualizations")
     chart_paths = []
+
+    # ---- Missing Values Plot ----
+    st.markdown("### Missing Values per Column")
 
     fig1 = plot_missing_values(missing_values)
     st.pyplot(fig1)
@@ -144,13 +162,23 @@ if uploaded_file is not None:
     tmp1 = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
     fig1.savefig(tmp1.name)
     chart_paths.append(tmp1.name)
+    plt.close(fig1)
 
-    fig2 = plot_numeric_distribution(df)
-    if fig2:
-        st.pyplot(fig2)
-        tmp2 = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-        fig2.savefig(tmp2.name)
-        chart_paths.append(tmp2.name)
+    # ---- Numeric Column Distributions ----
+    st.markdown("### Numeric Column Distributions")
+
+    figs = plot_numeric_distributions(df)
+
+    for fig in figs:
+        st.pyplot(fig)
+        
+        # Save EACH figure to its own temp file
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+        fig.savefig(tmp.name)
+        chart_paths.append(tmp.name)
+        plt.close(fig)
+
+    st.write(f"Total visuals generated: {len(chart_paths)}")
 
     # -------------------- Downloads --------------------
     report_json = {
