@@ -150,7 +150,7 @@ if uploaded_file is not None:
     st.markdown(md_report)
 
     # -------------------- Visualizations --------------------
-    st.subheader("📊 Data Visualizations")
+    st.subheader("Data Visualizations")
     chart_paths = []
 
     # ---- Missing Values Plot ----
