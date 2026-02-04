@@ -51,8 +51,6 @@ def generate_pdf_report(md_text, chart_paths):
     
     st.write(f"Added text elements to story")
     
-    # Add images - ONE AT A TIME with individual builds
-    # This is the KEY FIX for Streamlit/ReportLab issues
     images_added = 0
     for i, path in enumerate(valid_paths):
         try:
